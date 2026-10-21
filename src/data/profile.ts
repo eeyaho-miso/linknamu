@@ -13,12 +13,12 @@ export type Profile = {
 
 // 프로필과 링크는 여기서 수정합니다.
 export const profile: Profile = {
-  name: "정코딩",
-  bio: "세계 최강 바이브코더",
-  image: "/profile.svg",
+  name: "무코딩",
+  bio: "풀스택 개발자 | 요즘에는 AI 개발에 관심이 많아요",
+  image: "/profile.png",
   links: [
-    { id: "github", title: "GitHub", url: "https://github.com" },
-    { id: "blog", title: "블로그", url: "https://velog.io" },
-    { id: "instagram", title: "Instagram", url: "https://instagram.com" },
+    { id: "github", title: "💻 깃허브", url: "https://github.com/eeyaho-miso" },
+    { id: "blog", title: "✍️ 블로그", url: "https://sarangmoo.tistory.com" },
+    { id: "email", title: "📧 이메일", url: "mailto:sarangmoowoo@gmail.com" },
   ],
 };
