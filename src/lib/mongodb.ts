@@ -10,7 +10,13 @@ export function getMongoClient(): Promise<MongoClient> | null {
   if (!uri) return null;
 
   if (!globalForMongo.mongoClientPromise) {
-    globalForMongo.mongoClientPromise = new MongoClient(uri).connect();
+    // 연결에 실패하면 캐시를 비워 다음 요청에서 다시 시도합니다.
+    globalForMongo.mongoClientPromise = new MongoClient(uri)
+      .connect()
+      .catch((error) => {
+        globalForMongo.mongoClientPromise = undefined;
+        throw error;
+      });
   }
   return globalForMongo.mongoClientPromise;
 }
