@@ -10,11 +10,14 @@ export default function LinkList({ links }: { links: LinkItem[] }) {
 
   useEffect(() => {
     fetch("/api/click", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((data) => {
         if (data?.counts) setCounts(data.counts);
       })
-      .catch(() => {});
+      .catch((error) => console.warn("클릭 수를 불러오지 못했습니다.", error));
   }, []);
 
   const handleClick = (id: string) => {

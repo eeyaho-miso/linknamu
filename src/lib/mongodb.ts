@@ -11,7 +11,10 @@ export function getMongoClient(): Promise<MongoClient> | null {
 
   if (!globalForMongo.mongoClientPromise) {
     // 연결에 실패하면 캐시를 비워 다음 요청에서 다시 시도합니다.
-    globalForMongo.mongoClientPromise = new MongoClient(uri)
+    globalForMongo.mongoClientPromise = new MongoClient(uri, {
+      // IP 차단 등으로 연결이 안 될 때 기본 30초 대신 빨리 실패합니다.
+      serverSelectionTimeoutMS: 5000,
+    })
       .connect()
       .catch((error) => {
         globalForMongo.mongoClientPromise = undefined;

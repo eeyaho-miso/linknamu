@@ -7,25 +7,24 @@ export async function GET() {
   // 빌드 시 미리 렌더링하지 않고 요청마다 최신 값을 읽습니다.
   await connection();
 
-  const clicks = await getClicksCollection();
-  if (!clicks) {
-    return Response.json(
-      { error: "MONGODB_URI가 설정되지 않았습니다." },
-      { status: 503 },
+  try {
+    const clicks = await getClicksCollection();
+    if (!clicks) return missingUriResponse();
+
+    const linkIds = profile.links.map((link) => link.id);
+    const docs = await clicks
+      .find({ linkId: { $in: linkIds } }, { projection: { _id: 0, linkId: 1, count: 1 } })
+      .toArray();
+
+    const counts: Record<string, number> = Object.fromEntries(
+      linkIds.map((id) => [id, 0]),
     );
+    for (const doc of docs) counts[doc.linkId] = doc.count;
+
+    return Response.json({ counts });
+  } catch (error) {
+    return dbErrorResponse(error);
   }
-
-  const linkIds = profile.links.map((link) => link.id);
-  const docs = await clicks
-    .find({ linkId: { $in: linkIds } }, { projection: { _id: 0, linkId: 1, count: 1 } })
-    .toArray();
-
-  const counts: Record<string, number> = Object.fromEntries(
-    linkIds.map((id) => [id, 0]),
-  );
-  for (const doc of docs) counts[doc.linkId] = doc.count;
-
-  return Response.json({ counts });
 }
 
 export async function POST(request: Request) {
@@ -36,19 +35,31 @@ export async function POST(request: Request) {
     return Response.json({ error: "알 수 없는 링크입니다." }, { status: 400 });
   }
 
-  const clicks = await getClicksCollection();
-  if (!clicks) {
-    return Response.json(
-      { error: "MONGODB_URI가 설정되지 않았습니다." },
-      { status: 503 },
+  try {
+    const clicks = await getClicksCollection();
+    if (!clicks) return missingUriResponse();
+
+    await clicks.updateOne(
+      { linkId },
+      { $inc: { count: 1 }, $set: { updatedAt: new Date() } },
+      { upsert: true },
     );
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return dbErrorResponse(error);
   }
+}
 
-  await clicks.updateOne(
-    { linkId },
-    { $inc: { count: 1 }, $set: { updatedAt: new Date() } },
-    { upsert: true },
+function missingUriResponse() {
+  return Response.json(
+    { error: "MONGODB_URI가 설정되지 않았습니다." },
+    { status: 503 },
   );
+}
 
-  return Response.json({ ok: true });
+// 원인은 서버 로그(Vercel Logs)에만 남기고, 응답에는 연결 정보를 노출하지 않습니다.
+function dbErrorResponse(error: unknown) {
+  console.error("[api/click]", error);
+  return Response.json({ error: "DB 연결 실패" }, { status: 500 });
 }
